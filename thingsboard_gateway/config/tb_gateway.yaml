@@ -1,10 +1,10 @@
 thingsboard:
-  host: thingsboard.cloud
+  host: 172.16.11.247
   port: 1883
   remoteShell: false
   remoteConfiguration: false
   statistics:
-    enable: true
+    enable: false
     statsSendPeriodInSeconds: 3600
 #    configuration: statistics/statistics_linux.json
   deviceFiltering:
@@ -20,7 +20,7 @@ thingsboard:
     inactivityTimeoutSeconds: 120
     inactivityCheckPeriodSeconds: 10
   security:
-    accessToken: PUT_YOUR_GW_ACCESS_TOKEN_HERE
+    accessToken: YaEAFtbhM2QcFbhr6R9T
   qos: 1
 storage:
   type: memory
@@ -45,10 +45,10 @@ grpc:
   minTimeBetweenPingsMs: 10000
   minPingIntervalWithoutDataMs: 5000
 connectors:
-  -
-    name: MQTT Broker Connector
-    type: mqtt
-    configuration: mqtt.json
+  # -
+  #   name: MQTT Broker Connector
+  #   type: mqtt
+  #   configuration: mqtt.json
 
 #  -
 #    name: Modbus Connector
@@ -120,11 +120,11 @@ connectors:
 #    type: xmpp
 #    configuration: xmpp.json
 #
-#  -
-#   name: OCPP Connector
-#   type: ocpp
-#   configuration: ocpp.json
-#
+ -
+  name: OCPP Connector
+  type: ocpp
+  configuration: ocpp.json
+# #
 # ========= Customization ==========
 #
 #

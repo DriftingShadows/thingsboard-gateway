@@ -14,6 +14,7 @@
 
 import logging
 from abc import ABC, abstractmethod
+
 from thingsboard_gateway.gateway.constants import DEFAULT_SEND_ON_CHANGE_INFINITE_TTL_VALUE, DEFAULT_SEND_ON_CHANGE_VALUE
 
 log = logging.getLogger("connector")
