@@ -18,6 +18,8 @@ from time import sleep, time
 from ssl import CERT_REQUIRED, PROTOCOL_TLSv1_2
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 
+import debugpy
+
 try:
     from tb_gateway_mqtt import TBGatewayMqttClient
 except ImportError:

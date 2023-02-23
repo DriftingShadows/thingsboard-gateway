@@ -17,16 +17,9 @@ from os import curdir, listdir, mkdir, path
 from thingsboard_gateway.gateway.tb_gateway_service import TBGatewayService
 from thingsboard_gateway.gateway.hot_reloader import HotReloader
 
-import debugpy
-
-
 def main():
     if "logs" not in listdir(curdir):
         mkdir("logs")
-    
-    debugpy.listen(("0.0.0.0", 9001))
-    debugpy.wait_for_client()
-
     try:
         hot_reload = bool(sys.argv[1])
     except IndexError:

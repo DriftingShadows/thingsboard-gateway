@@ -12,3 +12,4 @@ protobuf<=3.20.0
 cachetools
 cryptography<3.5
 debugpy
+ocpp

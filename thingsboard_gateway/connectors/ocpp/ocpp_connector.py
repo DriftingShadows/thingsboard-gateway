@@ -28,6 +28,8 @@ from thingsboard_gateway.connectors.connector import Connector, log
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 
+import debugpy
+
 try:
     import ocpp
 except ImportError:
@@ -42,13 +44,11 @@ except ImportError:
     TBUtility.install_package("websockets")
     import websockets
 
-from ocpp.v16 import call
+from ocpp.v16 import call, enums
 from thingsboard_gateway.connectors.ocpp.charge_point import ChargePoint
-
 
 class NotAuthorized(Exception):
     """Charge Point not authorized"""
-
 
 class OcppConnector(Connector, Thread):
     DATA_TO_CONVERT = Queue(-1)
@@ -57,6 +57,12 @@ class OcppConnector(Connector, Thread):
     def __init__(self, gateway, config, connector_type):
         super().__init__()
         self._log = log
+        self.rpc_action_map = {
+            "Reset": self._on_reset_request,
+            "RemoteStartTransaction": self._remote_start_transaction,
+            "RemoteStopTransaction": self._remote_stop_transaction,
+            "UnlockConnector": self._unlock_connector
+        }
         self._central_system_config = config['centralSystem']
         self._charge_points_config = config.get('chargePoints', [])
         self._connector_type = connector_type
@@ -289,6 +295,10 @@ class OcppConnector(Connector, Thread):
         try:
             for rpc in charge_point.config.get('serverSideRpc', []):
                 if rpc['methodRPC'] == content['data']['method']:
+
+                    action = content['data']['params']['action']
+                    payload = content['data']['params']['payload']
+
                     data_to_send_tags = TBUtility.get_values(rpc.get('valueExpression'), content['data'],
                                                              'params',
                                                              get_tag=True)
@@ -300,14 +310,17 @@ class OcppConnector(Connector, Thread):
                     for (tag, value) in zip(data_to_send_tags, data_to_send_values):
                         data_to_send = data_to_send.replace('${' + tag + '}', dumps(value))
 
-                    request = call.DataTransferPayload('1', data=data_to_send)
+                    # request = call.DataTransferPayload('1', data=data_to_send)
+                    handler = self.rpc_action_map[action]
+                    response = handler(payload, charge_point)
 
-                    task = self.__loop.create_task(self._send_request(charge_point, request))
-                    while not task.done():
-                        sleep(.2)
-
+                    # task = self.__loop.create_task(self._send_request(charge_point, request))
+                    # while not task.done():
+                    #     sleep(.2)
+                    # response = task.result()
+                    self._log.debug(str(response))
                     if rpc.get('withResponse', True):
-                        self._gateway.send_rpc_reply(content["device"], content["data"]["id"], str(task.result()))
+                        self._gateway.send_rpc_reply(content["device"], content["data"]["id"], response)
 
                         return
         except Exception as e:
@@ -315,3 +328,55 @@ class OcppConnector(Connector, Thread):
 
     def get_config(self):
         return {'CS': self._central_system_config, 'CP': self._charge_points_config}
+
+    def _create_and_wait_for_task(self, charge_point, request):
+        task = self.__loop.create_task(self._send_request(charge_point, request))
+        while not task.done():
+            sleep(.2)
+        return task.result()
+
+    def _on_reset_request(self, payload, charge_point):
+        try:
+            reset_type = payload['reset_type']
+            reset_type = enums.ResetType(reset_type)
+            request = call.ResetPayload(type=reset_type)
+            response = self._create_and_wait_for_task(charge_point, request)
+            return_data = {
+                "status": response.status
+            }
+            return return_data
+        except Exception as e:
+            self._log.exception(e)
+
+    def _remote_start_transaction(self, payload, charge_point):
+        try:
+            id_tag = payload['id_tag']
+            request = call.RemoteStartTransactionPayload(id_tag=id_tag)
+            response = self._create_and_wait_for_task(charge_point, request)
+            return  {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)
+
+    def _remote_stop_transaction(self, payload, charge_point):
+        try:
+            transaction_id = payload['transaction_id']
+            request = call.RemoteStopTransactionPayload(transaction_id=transaction_id)
+            response = self._create_and_wait_for_task(charge_point, request)
+            return {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)
+
+    def _unlock_connector(self, payload, charge_point):
+        try:
+            connector_id = payload['connector_id']
+            request = call.UnlockConnectorPayload(connector_id=connector_id)
+            response = self._create_and_wait_for_task(charge_point, request)
+            return {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)

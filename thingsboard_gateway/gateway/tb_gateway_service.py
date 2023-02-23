@@ -49,6 +49,8 @@ from thingsboard_gateway.tb_utility.tb_remote_shell import RemoteShell
 from thingsboard_gateway.tb_utility.tb_updater import TBUpdater
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 
+import debugpy
+
 GRPC_LOADED = False
 try:
     from thingsboard_gateway.gateway.grpc_service.grpc_connector import GrpcConnector
@@ -148,6 +150,7 @@ class TBGatewayService:
 
     def __init__(self, config_file=None):
         signal(SIGINT, lambda _, __: self.__stop_gateway())
+        debugpy.listen(("0.0.0.0", 9001))
 
         self.stopped = False
         self.__lock = RLock()

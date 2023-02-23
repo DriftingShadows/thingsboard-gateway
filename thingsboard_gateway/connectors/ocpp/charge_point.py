@@ -15,12 +15,13 @@
 import simplejson
 from ocpp.v16 import ChargePoint as CP
 from ocpp.routing import on
-from ocpp.v16.enums import Action, RegistrationStatus, DataTransferStatus
-from ocpp.v16 import call_result
+from ocpp.v16.enums import Action, RegistrationStatus, DataTransferStatus, AuthorizationStatus
+from ocpp.v16 import call_result, datatypes
 from datetime import datetime
 
 from thingsboard_gateway.tb_utility.tb_loader import TBModuleLoader
 
+import random
 
 class ChargePoint(CP):
     def __init__(self, charge_point_id, websocket, config, callback):
@@ -112,3 +113,13 @@ class ChargePoint(CP):
                         {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.DataTransfer,
                          'profile': self._profile}, kwargs))
         return call_result.DataTransferPayload(status=DataTransferStatus.accepted)
+
+    @on(Action.StartTransaction)
+    def on_start_transaction(self, connector_id: int, id_tag: str, meterStart: int, timestamp, **kwargs):
+        id_tag_info = datatypes.IdTagInfo(status=AuthorizationStatus.accepted)
+        transaction_id=420
+        return call_result.StartTransactionPayload(transaction_id=transaction_id, id_tag_info=id_tag_info)
+
+    @on(Action.StopTransaction)
+    def on_stop_transaction(self, meter_stop: int, timestamp, transaction_id: str, **kwargs):
+        return call_result.StopTransactionPayload()
