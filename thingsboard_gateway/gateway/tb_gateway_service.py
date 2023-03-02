@@ -891,7 +891,6 @@ class TBGatewayService:
                             except Exception as e:
                                 log.exception(e)
                                 continue
-
                             if not devices_data_in_event_pack.get(current_event["deviceName"]):
                                 devices_data_in_event_pack[current_event["deviceName"]] = {"telemetry": [],
                                                                                            "attributes": {}}

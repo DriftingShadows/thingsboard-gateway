@@ -10,19 +10,74 @@
   },
   "chargePoints": [
     {
-      "idRegexpPattern": "CP_1",
-      "deviceNameExpression": "${Vendor} ${Model}",
-      "deviceTypeExpression": "default",
+      "idRegexpPattern": "OGCP_\\d{1,3}",
+      "deviceNameExpression": "${charge_point_id}",
+      "deviceTypeExpression": "Charge Point",
       "attributes": [
         {
-          "messageTypeFilter": "MeterValues,",
-          "key": "temp1",
-          "value": "${meter_value[:].sampled_value[:].value}"
+          "messageTypeFilter": "Heartbeat",
+          "key": "Last Heartbeat",
+          "value": "${last_heartbeat}"
+        },
+        {
+          "messageTypeFilter": "BootNotification",
+          "key": "Model",
+          "value": "${model}"
+        },
+        {
+          "messageTypeFilter": "BootNotification",
+          "key": "Vendor",
+          "value": "${vendor}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction,StopTransaction",
+          "key": "Transaction ID",
+          "value": "${transaction_id}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction,StopTransaction",
+          "key": "Ongoing Transaction",
+          "value": "${ongoing_transaction}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction",
+          "key": "Meter Start",
+          "value": "${meter_start}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction",
+          "key": "Start Timestamp",
+          "value": "${start_timestamp}"
+        },
+        {
+          "messageTypeFilter": "StopTransaction",
+          "key": "Meter Stop",
+          "value": "${meter_stop}"
+        },
+        {
+          "messageTypeFilter": "Stop Transaction",
+          "key": "Stop Timestamp",
+          "value": "${stop_timestamp}"
         },
         {
           "messageTypeFilter": "MeterValues,",
-          "key": "vendorId",
-          "value": "${connector_id}"
+          "key": "Sampled Value",
+          "value": "${meter_value[:].sampled_value[:].value}"
+        },
+        {
+          "messageTypeFilter": "StatusNotification",
+          "key": "Status",
+          "value": "${status}"
+        },
+        {
+          "messageTypeFilter": "StatusNotification",
+          "key": "Info",
+          "value": "${info}"
+        },
+        {
+          "messageTypeFilter": "StatusNotification",
+          "key": "Error Code",
+          "value": "${error_code}"
         }
       ],
       "timeseries": [

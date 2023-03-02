@@ -61,7 +61,10 @@ class OcppConnector(Connector, Thread):
             "Reset": self._on_reset_request,
             "RemoteStartTransaction": self._remote_start_transaction,
             "RemoteStopTransaction": self._remote_stop_transaction,
-            "UnlockConnector": self._unlock_connector
+            "UnlockConnector": self._unlock_connector,
+            "GetConfiguration": self._get_configuration,
+            "ChangeConfiguration": self._change_configuration,
+            "TriggerMessage": self._trigger_message
         }
         self._central_system_config = config['centralSystem']
         self._charge_points_config = config.get('chargePoints', [])
@@ -180,9 +183,9 @@ class OcppConnector(Connector, Thread):
         (is_valid, cp_config) = await self._is_charge_point_valid(charge_point_id, host=cp_host, port=cp_port)
         if is_valid:
             uplink_converter_name = cp_config.get('extension', self._default_converters['uplink'])
-            cp = ChargePoint(charge_point_id, websocket, {**cp_config, 'uplink_converter_name': uplink_converter_name},
+            cp = ChargePoint(charge_point_id, websocket, {**cp_config, 'uplink_converter_name': uplink_converter_name}, log,
                              OcppConnector._callback)
-            cp.authorized = True
+            cp.authorized = False
 
             self._log.info('Connected Charge Point with id: %s', charge_point_id)
             self._connected_charge_points.append(cp)
@@ -374,6 +377,36 @@ class OcppConnector(Connector, Thread):
         try:
             connector_id = payload['connector_id']
             request = call.UnlockConnectorPayload(connector_id=connector_id)
+            response = self._create_and_wait_for_task(charge_point, request)
+            return {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)
+
+    def _get_configuration(self, payload, charge_point):
+        request = call.GetConfigurationPayload(key=payload['key'])
+        try:
+            response = self._create_and_wait_for_task(charge_point, request)
+            keys_values_list = response.configuration_key
+            # configuration_dict = {d['key']: d['value'] for d in keys_values_list}
+            return keys_values_list
+        except Exception as e:
+            self._log.exception(e)
+
+    def _trigger_message(self, payload, charge_point):
+        try:
+            request = call.TriggerMessagePayload(requested_message=payload['requested_message'])
+            response = self._create_and_wait_for_task(charge_point, request)
+            return {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)
+
+    def _change_configuration(self, payload, charge_point):
+        try:
+            request = call.ChangeConfigurationPayload(key=payload['key'], value=payload['value'])
             response = self._create_and_wait_for_task(charge_point, request)
             return {
                 "status": response.status

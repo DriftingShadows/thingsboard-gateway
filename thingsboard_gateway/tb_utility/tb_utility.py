@@ -24,6 +24,7 @@ from simplejson import JSONDecodeError, dumps, loads
 
 log = getLogger("service")
 
+import debugpy
 
 class TBUtility:
 

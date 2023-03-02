@@ -24,14 +24,15 @@ from thingsboard_gateway.tb_utility.tb_loader import TBModuleLoader
 import random
 
 class ChargePoint(CP):
-    def __init__(self, charge_point_id, websocket, config, callback):
+    def __init__(self, charge_point_id, websocket, config, log, callback):
         super(ChargePoint, self).__init__(charge_point_id, websocket)
+        self._log = log
         self._config = config
         self._callback = callback
         self._uplink_converter = self._load_converter(config['uplink_converter_name'])(self._config)
         self._profile = {}
-        self.name = None
-        self.type = None
+        self.name = charge_point_id
+        self.type = "Charge Point"
         self._authorized = False
         self._stopped = False
 
@@ -64,6 +65,7 @@ class ChargePoint(CP):
     @on(Action.BootNotification)
     def on_boot_notification(self, charge_point_vendor: str, charge_point_model: str, **kwargs):
         self._profile = {
+            'charge_point_id': self.id,
             'Vendor': charge_point_vendor,
             'Model': charge_point_model
         }
@@ -71,18 +73,19 @@ class ChargePoint(CP):
         self.type = self._uplink_converter.get_device_type(self._profile)
 
         self._callback((self._uplink_converter,
-                        {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.MeterValues,
+                        {'deviceName': self.id, 'deviceType': self.type, 'messageType': Action.BootNotification,
                          'profile': self._profile},
-                        {'Vendor': charge_point_vendor, 'Model': charge_point_model, **kwargs}))
+                        {'vendor': charge_point_vendor, 'model': charge_point_model}))
 
         return call_result.BootNotificationPayload(
             current_time=datetime.utcnow().isoformat(),
-            interval=10,
+            interval=30,
             status=RegistrationStatus.accepted
         )
 
     @on(Action.Authorize)
     def on_authorize(self, id_tag: str, **kwargs):
+        self._log.debug('In Authorize')
         if self.authorized:
             return call_result.AuthorizePayload(id_tag_info={'status': 'Accepted'})
 
@@ -90,12 +93,19 @@ class ChargePoint(CP):
 
     @on(Action.Heartbeat)
     def on_heartbeat(self):
+        current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + "Z"
+
+        self._callback((self._uplink_converter,
+                {'deviceName': self.id, 'deviceType': self.type, 'messageType': Action.Heartbeat,
+                    'profile': self._profile}, {"last_heartbeat": current_time}))
+
         return call_result.HeartbeatPayload(
-            current_time=datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + "Z"
+            current_time=current_time
         )
 
     @on(Action.MeterValues)
     def on_meter_values(self, **kwargs):
+        self._log.debug('In MeterValues')
         self._callback((self._uplink_converter,
                         {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.MeterValues,
                          'profile': self._profile}, kwargs))
@@ -115,11 +125,29 @@ class ChargePoint(CP):
         return call_result.DataTransferPayload(status=DataTransferStatus.accepted)
 
     @on(Action.StartTransaction)
-    def on_start_transaction(self, connector_id: int, id_tag: str, meterStart: int, timestamp, **kwargs):
+    def on_start_transaction(self, connector_id: int, id_tag: str, meter_start: int, timestamp,  **kwargs):
+        self._log.debug('In Start Transaction')
         id_tag_info = datatypes.IdTagInfo(status=AuthorizationStatus.accepted)
-        transaction_id=420
+        transaction_id=500
+        self._callback((self._uplink_converter,
+                {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StartTransaction,
+                    'profile': self._profile}, {"meter_start": meter_start, "start_timestamp": timestamp, "ongoing_transaction": True, "transaction_id": transaction_id }))
+
         return call_result.StartTransactionPayload(transaction_id=transaction_id, id_tag_info=id_tag_info)
 
     @on(Action.StopTransaction)
     def on_stop_transaction(self, meter_stop: int, timestamp, transaction_id: str, **kwargs):
+        self._log.debug('In stop transaction')
+        self._callback((self._uplink_converter,
+        {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StopTransaction,
+            'profile': self._profile}, {"meter_stop": meter_stop, "stop_timestamp": timestamp, "ongoing_transaction": False, "transaction_id": transaction_id }))
+
         return call_result.StopTransactionPayload()
+
+    @on(Action.StatusNotification)
+    def on_status_notification(self, connector_id: int, error_code, **kwargs):
+        self._callback((self._uplink_converter,
+        {'deviceName': self.id, 'deviceType': self.type, 'messageType': Action.StatusNotification,
+        'profile': self._profile}, kwargs))
+
+        return call_result.StatusNotificationPayload()
