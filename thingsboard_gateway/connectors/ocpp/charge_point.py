@@ -131,7 +131,7 @@ class ChargePoint(CP):
         transaction_id=500
         self._callback((self._uplink_converter,
                 {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StartTransaction,
-                    'profile': self._profile}, {"meter_start": meter_start, "start_timestamp": timestamp, "ongoing_transaction": True, "transaction_id": transaction_id }))
+                    'profile': self._profile}, {"meter_start": meter_start, "start_timestamp": timestamp, "ongoing_transaction": True, "transaction_id": transaction_id, "transaction_info": {"type": "start", "payload": {"timestamp": timestamp, "meter": meter_start, "txn_id": transaction_id}}}))
 
         return call_result.StartTransactionPayload(transaction_id=transaction_id, id_tag_info=id_tag_info)
 
@@ -140,7 +140,7 @@ class ChargePoint(CP):
         self._log.debug('In stop transaction')
         self._callback((self._uplink_converter,
         {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StopTransaction,
-            'profile': self._profile}, {"meter_stop": meter_stop, "stop_timestamp": timestamp, "ongoing_transaction": False, "transaction_id": transaction_id }))
+            'profile': self._profile}, {"meter_stop": meter_stop, "stop_timestamp": timestamp, "ongoing_transaction": False, "transaction_id": transaction_id, "transaction_info": {"type": "stop", "payload": {"timestamp": timestamp, "meter": meter_stop, "txn_id": transaction_id}} }))
 
         return call_result.StopTransactionPayload()
 

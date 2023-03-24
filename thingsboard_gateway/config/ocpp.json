@@ -60,7 +60,7 @@
           "value": "${stop_timestamp}"
         },
         {
-          "messageTypeFilter": "MeterValues,",
+          "messageTypeFilter": "MeterValues",
           "key": "Sampled Value",
           "value": "${meter_value[:].sampled_value[:].value}"
         },
@@ -82,9 +82,14 @@
       ],
       "timeseries": [
         {
-          "messageTypeFilter": "DataTransfer,",
-          "key": "temp",
-          "value": "${data.temp}"
+          "messageTypeFilter": "MeterValues",
+          "key": "MeterValues",
+          "value": "${meter_value[:].sampled_value[:].value}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction,StopTransaction",
+          "key": "TransactionInfo",
+          "value": "${transaction_info}"
         }
       ],
       "attributeUpdates": [
