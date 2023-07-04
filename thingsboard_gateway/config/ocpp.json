@@ -55,14 +55,24 @@
           "value": "${meter_stop}"
         },
         {
-          "messageTypeFilter": "Stop Transaction",
+          "messageTypeFilter": "StopTransaction",
           "key": "Stop Timestamp",
           "value": "${stop_timestamp}"
+        },
+        {
+          "messageTypeFilter": "StopTransaction",
+          "key": "Sampled Value",
+          "value": "${sampled_value}"
         },
         {
           "messageTypeFilter": "MeterValues",
           "key": "Sampled Value",
           "value": "${meter_value[:].sampled_value[:].value}"
+        },
+        {
+          "messageTypeFilter": "MeterValues",
+          "key": "Current",
+          "value": "${meter_value[*].sampled_value[?measurand=='Current.Import'].value}"
         },
         {
           "messageTypeFilter": "StatusNotification",

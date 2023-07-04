@@ -1,4 +1,4 @@
-jsonpath-rw
+jsonpath-rw-ext
 regex
 pip
 PyYAML

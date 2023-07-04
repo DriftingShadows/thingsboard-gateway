@@ -106,6 +106,13 @@ class ChargePoint(CP):
     @on(Action.MeterValues)
     def on_meter_values(self, **kwargs):
         self._log.debug('In MeterValues')
+        # try:
+        #     if(kwargs['meter_value'][0]['sampled_value'][1]['measurand'] == 'Current.Import'):
+        #         current = kwargs['meter_value'][0]['sampled_value'][1]['value']
+        #         kwargs['current'] = current
+        # except Exception as e:
+        #     self._log.debug(e)
+            
         self._callback((self._uplink_converter,
                         {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.MeterValues,
                          'profile': self._profile}, kwargs))
@@ -128,7 +135,7 @@ class ChargePoint(CP):
     def on_start_transaction(self, connector_id: int, id_tag: str, meter_start: int, timestamp,  **kwargs):
         self._log.debug('In Start Transaction')
         id_tag_info = datatypes.IdTagInfo(status=AuthorizationStatus.accepted)
-        transaction_id=500
+        transaction_id = random.randint(1, 1000)
         self._callback((self._uplink_converter,
                 {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StartTransaction,
                     'profile': self._profile}, {"meter_start": meter_start, "start_timestamp": timestamp, "ongoing_transaction": True, "transaction_id": transaction_id, "transaction_info": {"type": "start", "payload": {"timestamp": timestamp, "meter": meter_start, "txn_id": transaction_id}}}))
@@ -140,7 +147,7 @@ class ChargePoint(CP):
         self._log.debug('In stop transaction')
         self._callback((self._uplink_converter,
         {'deviceName': self.name, 'deviceType': self.type, 'messageType': Action.StopTransaction,
-            'profile': self._profile}, {"meter_stop": meter_stop, "stop_timestamp": timestamp, "ongoing_transaction": False, "transaction_id": transaction_id, "transaction_info": {"type": "stop", "payload": {"timestamp": timestamp, "meter": meter_stop, "txn_id": transaction_id}} }))
+            'profile': self._profile}, {"meter_stop": meter_stop, "stop_timestamp": timestamp, "ongoing_transaction": False, "sampled_value": 0, "transaction_id": transaction_id, "transaction_info": {"type": "stop", "payload": {"timestamp": timestamp, "meter": meter_stop, "txn_id": transaction_id}} }))
 
         return call_result.StopTransactionPayload()
 

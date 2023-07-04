@@ -19,7 +19,7 @@ from cryptography import x509
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
-from jsonpath_rw import parse
+from jsonpath_rw_ext import parse
 from simplejson import JSONDecodeError, dumps, loads
 
 log = getLogger("service")
@@ -126,7 +126,8 @@ class TBUtility:
 
     @staticmethod
     def get_values(expression, body=None, value_type="string", get_tag=False, expression_instead_none=False):
-        expression_arr = findall(r'\$\{[${A-Za-z0-9.^\]\[*_:]*\}', expression)
+        # expression_arr = findall(r'\$\{[${A-Za-z0-9.^\]\[*_:]*\}', expression)
+        expression_arr = findall(r'\$\{[^}]*\}', expression)
 
         values = [TBUtility.get_value(exp, body, value_type=value_type, get_tag=get_tag,
                                       expression_instead_none=expression_instead_none) for exp in expression_arr]

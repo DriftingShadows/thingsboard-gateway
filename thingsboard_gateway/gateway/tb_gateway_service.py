@@ -879,7 +879,6 @@ class TBGatewayService:
                 if self.tb_client.is_connected():
                     size = self.__get_data_size(devices_data_in_event_pack) - 2
                     events = []
-
                     if self.__remote_configurator is None or not self.__remote_configurator.in_process:
                         events = self._event_storage.get_event_pack()
 

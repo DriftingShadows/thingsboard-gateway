@@ -37,6 +37,9 @@ except ImportError:
     TBUtility.install_package("ocpp")
     import ocpp
 
+# from ocpp.v16.datatypes import ChargingProfile, ChargingSchedule
+# from ocpp.v16.enums import ChargingProfilePurposeType, ChargingProfileKindType
+
 try:
     import websockets
 except ImportError:
@@ -44,7 +47,7 @@ except ImportError:
     TBUtility.install_package("websockets")
     import websockets
 
-from ocpp.v16 import call, enums
+from ocpp.v16 import call, enums, datatypes
 from thingsboard_gateway.connectors.ocpp.charge_point import ChargePoint
 
 class NotAuthorized(Exception):
@@ -64,7 +67,9 @@ class OcppConnector(Connector, Thread):
             "UnlockConnector": self._unlock_connector,
             "GetConfiguration": self._get_configuration,
             "ChangeConfiguration": self._change_configuration,
-            "TriggerMessage": self._trigger_message
+            "TriggerMessage": self._trigger_message,
+            "SetChargingProfile": self._set_charging_profile,
+            "ClearChargingProfile": self._clear_charging_profile
         }
         self._central_system_config = config['centralSystem']
         self._charge_points_config = config.get('chargePoints', [])
@@ -348,6 +353,49 @@ class OcppConnector(Connector, Thread):
                 "status": response.status
             }
             return return_data
+        except Exception as e:
+            self._log.exception(e)
+
+    def _set_charging_profile(self, payload, charge_point):
+        try:
+            request = call.SetChargingProfilePayload(
+                connector_id=1,
+                cs_charging_profiles=payload
+            )
+
+            # request = call.SetChargingProfilePayload(connector_id=1,
+            #                                             cs_charging_profiles=datatypes.ChargingProfile(
+            #                                                 charging_profile_id=1,
+            #                                                 stack_level=0,
+            #                                                 charging_profile_purpose=enums.ChargingProfilePurposeType.tx_profile,
+            #                                                 charging_profile_kind=enums.ChargingProfileKindType.relative,
+            #                                                 charging_schedule=datatypes.ChargingSchedule(
+            #                                                     charging_rate_unit=enums.ChargingRateUnitType.amps,
+            #                                                     charging_schedule_period=[
+            #                                                         datatypes.ChargingSchedulePeriod(
+            #                                                             limit=6,
+            #                                                             start_period=0
+            #                                                         )
+            #                                                     ]
+            #                                                 )
+                                                        
+            #                                             )
+            #                                          )
+            response = self._create_and_wait_for_task(charge_point, request)
+            self._log.debug(response)
+            return  {
+                "status": response.status
+            }
+        except Exception as e:
+            self._log.exception(e)
+
+    def _clear_charging_profile(self, payload, charge_point):
+        try:
+            request = call.ClearChargingProfilePayload()
+            response = self._create_and_wait_for_task(charge_point, request)
+            return  {
+                "status": response.status
+            }
         except Exception as e:
             self._log.exception(e)
 
