@@ -60,9 +60,14 @@
           "value": "${stop_timestamp}"
         },
         {
-          "messageTypeFilter": "StopTransaction",
+          "messageTypeFilter": "StartTransaction,StopTransaction",
           "key": "Sampled Value",
           "value": "${sampled_value}"
+        },
+        {
+          "messageTypeFilter": "StartTransaction,StopTransaction",
+          "key": "Current",
+          "value": "${current}"
         },
         {
           "messageTypeFilter": "MeterValues",
