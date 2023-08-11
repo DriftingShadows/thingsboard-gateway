@@ -10,7 +10,7 @@
   },
   "chargePoints": [
     {
-      "idRegexpPattern": "OGCP_\\d{1,3}",
+      "idRegexpPattern": "^OGCP[A-Za-z]\\d{5}$",
       "deviceNameExpression": "${charge_point_id}",
       "deviceTypeExpression": "Charge Point",
       "attributes": [
