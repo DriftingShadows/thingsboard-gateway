@@ -402,7 +402,7 @@ class OcppConnector(Connector, Thread):
     def _remote_start_transaction(self, payload, charge_point):
         try:
             id_tag = payload['id_tag']
-            request = call.RemoteStartTransactionPayload(id_tag=id_tag)
+            request = call.RemoteStartTransactionPayload(id_tag=id_tag,connector_id=1)
             response = self._create_and_wait_for_task(charge_point, request)
             return  {
                 "status": response.status

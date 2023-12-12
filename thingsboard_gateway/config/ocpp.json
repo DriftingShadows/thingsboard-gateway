@@ -72,7 +72,7 @@
         {
           "messageTypeFilter": "MeterValues",
           "key": "Sampled Value",
-          "value": "${meter_value[:].sampled_value[:].value}"
+          "value": "${meter_value[*].sampled_value[?measurand=='Energy.Active.Import.Register'].value}"
         },
         {
           "messageTypeFilter": "MeterValues",
@@ -99,7 +99,7 @@
         {
           "messageTypeFilter": "MeterValues",
           "key": "MeterValues",
-          "value": "${meter_value[:].sampled_value[:].value}"
+          "value": "${meter_value[*].sampled_value[?measurand=='Energy.Active.Import.Register'].value}"
         },
         {
           "messageTypeFilter": "StartTransaction,StopTransaction",
