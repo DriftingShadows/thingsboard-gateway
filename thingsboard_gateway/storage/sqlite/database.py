@@ -1,4 +1,4 @@
-#     Copyright 2022. ThingsBoard
+#     Copyright 2024. ThingsBoard
 #
 #     Licensed under the Apache License, Version 2.0 (the "License");
 #     you may not use this file except in compliance with the License.
@@ -38,7 +38,7 @@ class Database(Thread):
 
     def __init__(self, config, processing_queue: Queue):
         super().__init__()
-        self.setDaemon(True)
+        self.daemon = True
         self.settings = StorageSettings(config)
 
         if not exists(self.settings.data_folder_path):
@@ -104,9 +104,9 @@ class Database(Thread):
             self.db.rollback()
             log.exception(e)
 
-    def read_data(self, ts):
+    def read_data(self):
         try:
-            data = self.db.execute('''SELECT message FROM messages WHERE timestamp >= ? ;''', [ts])
+            data = self.db.execute('''SELECT timestamp, message FROM messages ORDER BY timestamp ASC LIMIT 0, 50;''')
             return data
         except Exception as e:
             self.db.rollback()
@@ -114,7 +114,7 @@ class Database(Thread):
 
     def delete_data(self, ts):
         try:
-            data = self.db.execute('''DELETE FROM messages WHERE timestamp >= ? ;''', [ts])
+            data = self.db.execute('''DELETE FROM messages WHERE timestamp <= ?;''', [ts,])
             return data
         except Exception as e:
             self.db.rollback()

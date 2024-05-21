@@ -1,4 +1,4 @@
-#     Copyright 2022. ThingsBoard
+#     Copyright 2024. ThingsBoard
 #
 #     Licensed under the Apache License, Version 2.0 (the "License");
 #     you may not use this file except in compliance with the License.
@@ -12,12 +12,13 @@
 #     See the License for the specific language governing permissions and
 #     limitations under the License.
 
-from thingsboard_gateway.connectors.converter import Converter, log
+from thingsboard_gateway.connectors.converter import Converter
 from thingsboard_gateway.gateway.statistics_service import StatisticsService
 
 
 class SNMPUplinkConverter(Converter):
-    def __init__(self, config):
+    def __init__(self, config, logger):
+        self._log = logger
         self.__config = config
 
     @StatisticsService.CollectStatistics(start_stat_type='receivedBytesFromDevices',
@@ -46,7 +47,7 @@ class SNMPUplinkConverter(Converter):
                 result[config[0]].append({config[1]["key"]: data.decode("UTF-8")})
             else:
                 result[config[0]].append({config[1]["key"]: data})
-            log.debug(result)
+            self._log.debug(result)
         except Exception as e:
-            log.exception(e)
+            self._log.exception(e)
         return result

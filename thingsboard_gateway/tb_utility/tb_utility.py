@@ -1,4 +1,4 @@
-#     Copyright 2022. ThingsBoard
+#     Copyright 2024. ThingsBoard
 #
 #     Licensed under the Apache License, Version 2.0 (the "License");
 #     you may not use this file except in compliance with the License.
@@ -14,8 +14,11 @@
 import datetime
 from logging import getLogger
 from re import search, findall
+from uuid import uuid4
+from distutils.util import strtobool
 
 from cryptography import x509
+from cryptography.x509.oid import NameOID
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec
 from cryptography.hazmat.primitives import serialization
@@ -23,8 +26,6 @@ from jsonpath_rw_ext import parse
 from simplejson import JSONDecodeError, dumps, loads
 
 log = getLogger("service")
-
-import debugpy
 
 class TBUtility:
 
@@ -101,13 +102,13 @@ class TBUtility:
         try:
             if isinstance(body, dict) and target_str.split()[0] in body:
                 if value_type.lower() == "string":
-                    full_value = str(expression[0: max(p1 - 2, 0)]) + str(body[target_str.split()[0]]) + str(expression[
-                                                                                                             p2 + 1:len(
-                                                                                                                 expression)])
+                    full_value = str(expression[0: max(p1 - 2, 0)]) + str(body[target_str.split()[0]]) + str(expression[p2 + 1:len(expression)])
                 else:
                     full_value = body.get(target_str.split()[0])
             elif isinstance(body, (dict, list)):
                 try:
+                    if " " in target_str:
+                        target_str = '.'.join('"' + section_key + '"' if " " in section_key else section_key for section_key in target_str.split('.'))
                     jsonpath_expression = parse(target_str)
                     jsonpath_match = jsonpath_expression.find(body)
                     if jsonpath_match:
@@ -126,8 +127,7 @@ class TBUtility:
 
     @staticmethod
     def get_values(expression, body=None, value_type="string", get_tag=False, expression_instead_none=False):
-        # expression_arr = findall(r'\$\{[${A-Za-z0-9.^\]\[*_:]*\}', expression)
-        expression_arr = findall(r'\$\{[^}]*\}', expression)
+        expression_arr = findall(r'\$\{[${A-Za-z0-9. ^\]\[*_:"]*\}', expression)
 
         values = [TBUtility.get_value(exp, body, value_type=value_type, get_tag=get_tag,
                                       expression_instead_none=expression_instead_none) for exp in expression_arr]
@@ -138,30 +138,51 @@ class TBUtility:
         return values
 
     @staticmethod
-    def install_package(package, version="upgrade"):
-        from sys import executable
-        from subprocess import check_call, CalledProcessError
+    def install_package(package, version="upgrade", force_install=False):
+        from sys import executable, prefix, base_prefix
+        from subprocess import check_call
+        import site
+        from importlib import reload
+
         result = False
-        if version.lower() == "upgrade":
-            try:
-                result = check_call([executable, "-m", "pip", "install", package, "--upgrade", "--user"])
-            except CalledProcessError:
+        installation_sign = "==" if ">=" not in version else ""
+
+        if prefix != base_prefix:
+            if force_install:
+                result = check_call([executable, '-m', 'pip', 'install', package + '==' + version, '--force-reinstall'])
+            elif version.lower() == "upgrade":
                 result = check_call([executable, "-m", "pip", "install", package, "--upgrade"])
+            else:
+                if TBUtility.get_package_version(package) is None:
+                    result = check_call([executable, "-m", "pip", "install", package + installation_sign + version])
         else:
-            from pkg_resources import get_distribution
-            current_package_version = None
-            try:
-                current_package_version = get_distribution(package)
-            except Exception:
-                pass
-            if current_package_version is None or current_package_version != version:
-                installation_sign = "==" if ">=" not in version else ""
-                try:
+            if force_install:
+                result = check_call(
+                    [executable, '-m', 'pip', 'install', package + '==' + version, '--force-reinstall', "--user"])
+            elif version.lower() == "upgrade":
+                result = check_call([executable, "-m", "pip", "install", package, "--upgrade", "--user"])
+            else:
+                if TBUtility.get_package_version(package) is None:
                     result = check_call(
                         [executable, "-m", "pip", "install", package + installation_sign + version, "--user"])
-                except CalledProcessError:
-                    result = check_call([executable, "-m", "pip", "install", package + installation_sign + version])
+
+        # Because `pip` is running in a subprocess the newly installed modules and libraries are
+        # not immediately available to the current runtime. 
+        # Refreshing sys.path fixes this. See:
+        # https://stackoverflow.com/questions/4271494/what-sets-up-sys-path-with-python-and-when
+        reload(site)
+
         return result
+
+    @staticmethod
+    def get_package_version(package):
+        from pkg_resources import get_distribution
+        current_package_version = None
+        try:
+            current_package_version = get_distribution(package)
+        except Exception:
+            pass
+        return current_package_version
 
     @staticmethod
     def replace_params_tags(text, data):
@@ -178,12 +199,14 @@ class TBUtility:
         return list(dictionary.values())[list(dictionary.values()).index(value)]
 
     @staticmethod
-    def generate_certificate(old_certificate_path, old_key_path, old_certificate):
+    def generate_certificate(old_certificate_path, old_key_path, old_certificate=None):
         key = ec.generate_private_key(ec.SECP256R1())
         public_key = key.public_key()
         builder = x509.CertificateBuilder()
-        builder = builder.subject_name(old_certificate.subject)
-        builder = builder.issuer_name(old_certificate.issuer)
+        builder = builder.subject_name(old_certificate.subject if old_certificate else x509.Name(
+            [x509.NameAttribute(NameOID.COMMON_NAME, u'localhost'), ]))
+        builder = builder.issuer_name(old_certificate.issuer if old_certificate else x509.Name(
+            [x509.NameAttribute(NameOID.COMMON_NAME, u'localhost'), ]))
         builder = builder.not_valid_before(datetime.datetime.today() - datetime.timedelta(days=1))
         builder = builder.not_valid_after(datetime.datetime.today() + (datetime.timedelta(1, 0, 0) * 365))
         builder = builder.serial_number(x509.random_serial_number())
@@ -211,3 +234,37 @@ class TBUtility:
                 return TBUtility.generate_certificate(certificate, key, cert_detail)
             else:
                 return True
+
+    @staticmethod
+    def convert_data_type(data, new_type, use_eval=False):
+        current_type = type(data)
+        # use 'in' check instead of equality for such case like 'str' and 'string'
+        new_type = new_type.lower()
+        if current_type.__name__ in new_type:
+            return data
+
+        evaluated_data = eval(data, globals(), {}) if use_eval else data
+        try:
+            if 'int' in new_type or 'long' in new_type:
+                return int(float(evaluated_data))
+            elif 'float' == new_type or 'double' == new_type:
+                return float(evaluated_data)
+            elif 'bool' in new_type:
+                return bool(strtobool(evaluated_data))
+            else:
+                return str(evaluated_data)
+        except ValueError:
+            return str(evaluated_data)
+
+    @staticmethod
+    def get_or_create_connector_id(connector_conf):
+        connector_id = str(uuid4())
+        if isinstance(connector_conf, dict):
+            if connector_conf.get('id') is not None:
+                connector_id = connector_conf['id']
+        elif isinstance(connector_conf, str):
+            start_find = connector_conf.find("{id_var_start}")
+            end_find = connector_conf.find("{id_var_end}")
+            if start_find > -1 and end_find > -1:
+                connector_id = connector_conf[start_find + 13:end_find]
+        return connector_id
