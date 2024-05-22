@@ -1,6 +1,6 @@
 {
   "thingsboard": {
-    "host": "thingsboard.cloud",
+    "host": "host.docker.internal",
     "port": 1883,
     "remoteShell": false,
     "remoteConfiguration": true,
@@ -19,7 +19,7 @@
     "handleDeviceRenaming": true,
     "security": {
       "type": "accessToken",
-      "accessToken": "YOUR_ACCESS_TOKEN"
+      "accessToken": "UlMWROV40khRJdhK46Lj"
     },
     "qos": 1,
     "checkingDeviceActivity": {
@@ -52,5 +52,11 @@
     "keepAliveTimeMs": 10000,
     "keepAliveTimeoutMs": 5000
   },
-  "connectors": []
+  "connectors": [
+    {
+      "type": "ocpp",
+      "name": "OCPP Connector",
+      "configuration": "ocpp.json"
+    }
+  ]
 }

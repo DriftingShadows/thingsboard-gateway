@@ -29,7 +29,6 @@ from thingsboard_gateway.gateway.statistics_service import StatisticsService
 from thingsboard_gateway.tb_utility.tb_utility import TBUtility
 from thingsboard_gateway.tb_utility.tb_logger import init_logger
 
-import debugpy
 
 try:
     import ocpp
@@ -195,8 +194,8 @@ class OcppConnector(Connector, Thread):
         (is_valid, cp_config) = await self._is_charge_point_valid(charge_point_id, host=cp_host, port=cp_port)
         if is_valid:
             uplink_converter_name = cp_config.get('extension', self._default_converters['uplink'])
-            cp = ChargePoint(charge_point_id, websocket, {**cp_config, 'uplink_converter_name': uplink_converter_name}, log,
-                             OcppConnector._callback)
+            cp = ChargePoint(charge_point_id, websocket, {**cp_config, 'uplink_converter_name': uplink_converter_name},
+                                        OcppConnector._callback, self._log)
             cp.authorized = False
 
             self._log.info('Connected Charge Point with id: %s', charge_point_id)

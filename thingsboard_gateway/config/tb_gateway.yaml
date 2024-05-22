@@ -1,7 +1,5 @@
 thingsboard:
-  # host: ip-172-29-248-94.ap-southeast-2.compute.internal
-  # host: 172.16.11.247
-  host: 192.168.0.248 
+  host: localhost 
   port: 1883
   remoteShell: false
   remoteConfiguration: false
@@ -21,8 +19,10 @@ thingsboard:
     checkDeviceInactivity: false
     inactivityTimeoutSeconds: 120
     inactivityCheckPeriodSeconds: 10
-  security:
-    accessToken: YaEAFtbhM2QcFbhr6R9T
+  "security": {
+    "type": "accessToken",
+    "accessToken": "UlMWROV40khRJdhK46Lj"
+  },
   qos: 1
 storage:
   type: memory
