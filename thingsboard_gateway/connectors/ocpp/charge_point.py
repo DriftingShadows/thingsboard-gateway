@@ -12,7 +12,10 @@
 #     See the License for the specific language governing permissions and
 #     limitations under the License.
 
+import pprint
 import simplejson
+import requests
+import json
 from ocpp.v16 import ChargePoint as CP
 from ocpp.routing import on
 from ocpp.v16.enums import Action, RegistrationStatus, DataTransferStatus, AuthorizationStatus
@@ -86,11 +89,36 @@ class ChargePoint(CP):
     @on(Action.Authorize)
     def on_authorize(self, id_tag: str, **kwargs):
         self._log.debug('In Authorize')
-        if self.authorized:
-            return call_result.AuthorizePayload(id_tag_info={'status': 'Accepted'})
-
-        return call_result.AuthorizePayload(id_tag_info={'status': 'Not authorized'})
-
+        self._log.debug(f'id_tag: {id_tag}')
+        # Print all attributes of self in a pretty format
+        # attributes = {attr: getattr(self, attr) for attr in dir(self) if not attr.startswith("__")}
+        # pretty_attributes = pprint.pformat(attributes, indent=4)
+        # self._log.debug(f'Self attributes:\n{pretty_attributes}')
+        url = "http://host.docker.internal:3000/api/v1/chargers/authorize"
+        headers = {'Content-Type' : 'application/json'}
+        payload = {
+                    'idTag': id_tag,
+                    'chargerIdentifier': self.id 
+                  }
+        try:
+            response = requests.post(url, headers=headers, data=json.dumps(payload))
+            if(response.status_code != 200):
+                self._log.debug(f'Post request failed for {id_tag}: {response.status_code} - {response.text}')
+                return call_result.AuthorizePayload(id_tag_info={'status': AuthorizationStatus.invalid})
+            else:
+                response_data = response.json()
+                self._log.debug(f'response data: {response.json()}')                
+                success =  response_data.get('authorized')
+                if(success == True):
+                    self._log.debug(f'authorisation accepted for id tag {id_tag}')
+                    return call_result.AuthorizePayload(id_tag_info={'status': 'Accepted'})
+                else:
+                    self._log.debug(f'authorisation declined for id tag {id_tag} due to unauthorized id tag')
+                    return call_result.AuthorizePayload(id_tag_info={'status': AuthorizationStatus.invalid})                
+        except Exception as err:
+            self._log.debug(f'Error occured during post request for id tag {id_tag}: str{err}')
+            return call_result.AuthorizePayload(id_tag_info={'status': AuthorizationStatus.invalid})
+            
     @on(Action.Heartbeat)
     def on_heartbeat(self):
         current_time = datetime.utcnow().strftime('%Y-%m-%dT%H:%M:%S') + "Z"

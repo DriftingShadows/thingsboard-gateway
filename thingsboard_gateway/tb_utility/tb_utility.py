@@ -108,10 +108,20 @@ class TBUtility:
                     full_value = body.get(target_str.split()[0])
             elif isinstance(body, (dict, list)):
                 try:
-                    jsonpath_expression = parse(target_str)
-                    jsonpath_match = jsonpath_expression.find(body)
-                    if jsonpath_match:
-                        full_value = jsonpath_match[0].value
+                    if 'Energy.Active.Import.Register' in target_str:
+                        jsonpath_expression = parse("$.meter_value[*].sampled_value[*]")
+                        jsonpath_match = jsonpath_expression.find(body)
+                        for match in jsonpath_match:
+                            sampled_value = match.value
+                            measurand = sampled_value.get('measurand', 'Energy.Active.Import.Register')
+                            if measurand == 'Energy.Active.Import.Register':
+                                full_value = sampled_value.get('value')
+                                break                       
+                    else:
+                        jsonpath_expression = parse(target_str)
+                        jsonpath_match = jsonpath_expression.find(body)
+                        if jsonpath_match:
+                            full_value = jsonpath_match[0].value
                 except Exception as e:
                     log.debug(e)
             elif isinstance(body, (str, bytes)):

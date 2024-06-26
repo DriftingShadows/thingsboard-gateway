@@ -1,7 +1,7 @@
 thingsboard:
   # host: ip-172-29-248-94.ap-southeast-2.compute.internal
   # host: 172.16.11.247
-  host: 192.168.0.248 
+  host: host.docker.internal 
   port: 1883
   remoteShell: false
   remoteConfiguration: false
