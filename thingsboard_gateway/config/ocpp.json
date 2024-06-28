@@ -13,6 +13,7 @@
       "idRegexpPattern": "^OGCP[A-Za-z]\\d{5}|SMP_\\d{1,15}$",
       "deviceNameExpression": "${charge_point_id}",
       "deviceTypeExpression": "Charge Point",
+      "authorizeApiKey": "8i6ctiCBH3c-Qstonh.h",
       "attributes": [
         {
           "messageTypeFilter": "Heartbeat",

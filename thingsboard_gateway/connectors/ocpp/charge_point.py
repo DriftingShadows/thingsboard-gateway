@@ -32,6 +32,7 @@ class ChargePoint(CP):
         self._log = log
         self._config = config
         self._callback = callback
+        self._authorizeApiKey = config['authorizeApiKey']
         self._uplink_converter = self._load_converter(config['uplink_converter_name'])(self._config)
         self._profile = {}
         self.name = charge_point_id
@@ -95,7 +96,7 @@ class ChargePoint(CP):
         # pretty_attributes = pprint.pformat(attributes, indent=4)
         # self._log.debug(f'Self attributes:\n{pretty_attributes}')
         url = "http://host.docker.internal:3000/api/v1/chargers/authorize"
-        headers = {'Content-Type' : 'application/json'}
+        headers = {'Content-Type' : 'application/json', 'Gateway-Authorization': self._authorizeApiKey}
         payload = {
                     'idTag': id_tag,
                     'chargerIdentifier': self.id 
